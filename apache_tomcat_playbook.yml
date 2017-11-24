@@ -1,0 +1,5 @@
+#- name: Create Apache-Tomcat-AJP deployment
+- hosts: localhost
+  gather_facts: false
+  roles:
+    - apache_tomcat_deployment

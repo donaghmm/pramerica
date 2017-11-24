@@ -1,2 +1,0 @@
-# pramerica
-temporary test repo

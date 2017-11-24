@@ -1,0 +1,44 @@
+---
+# tasks file for apache_tomcat_deployment- name: Create Apache-Tomcat-AJP deployment
+
+- name: Create an ELB in EU-WEST-1 region
+  local_action:
+    module: ec2_elb_lb
+    state: present
+    name: "{{ elb_name }}"
+    security_group_ids: "{{ group_id }}"
+    region: "{{ region }}"
+    subnets: "{{ elb_subnets }}"
+    purge_subnets: yes
+    cross_az_load_balancing: "yes"
+    listeners:
+      - protocol: http
+        load_balancer_port: 80
+        instance_port: 80
+
+- name: Create the Autoscaling Launch Configuration
+  ec2_lc:
+    name: "{{ launch_configuration_name }}"
+    image_id: "{{ image }}"
+    key_name: "{{ key_name }}"
+    security_groups: "{{ group_id }}"
+    instance_type: "{{ instance_type }}"
+    assign_public_ip: "yes"
+    user_data_path: "roles/apache_tomcat_deployment/files/user_data.sh"
+
+- name: Create the Autoscaling Group
+  ec2_asg:
+    name: "{{ asg_name }}"
+    load_balancers: "{{ elb_name }}"
+    availability_zones: "{{ elb_zones }}"
+    vpc_zone_identifier: "{{ elb_subnets }}"
+    launch_config_name: "{{ launch_configuration_name }}"
+    min_size: "{{ asg_size_min }}"
+    max_size: "{{ asg_size_max }}"
+    desired_capacity: "{{ desired_capacity }}"
+    health_check_period: "{{ health_check_period }}"
+    tags:
+        - environment: "{{ count_tag }}"
+          propagate_at_launch: "true"
+          key: "Name"
+          value: "{{ count_tag }}"         
